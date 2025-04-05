@@ -4,9 +4,12 @@ const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
 const bcrypt = require("bcrypt");
+require('dotenv').config();  // To load environment variables from .env file
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;  // Use dynamic port from environment or 3000 locally
+
+// Use environment variables for sensitive info
 
 const mongoDBUri = "mongodb+srv://jeansilva:DLSU1234!@tastecheck.hhcdgvj.mongodb.net/webcafe?retryWrites=true&w=majority";
 
@@ -17,12 +20,10 @@ app.use("/uploads", express.static("uploads"));
 app.use("/images", express.static(path.join(__dirname, "Public", "images")));
 app.use(express.static(path.join(__dirname, 'Public')));
 
-
 // Serve homepage.html for the root route
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "Public", "Homepage.html"));
-  });
-  
+});
 
 // MongoDB Connection
 mongoose.connect(mongoDBUri, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -65,18 +66,23 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// Register Route
+// Register Route with Password Hashing
 app.post("/register", upload.single("avatar"), async (req, res) => {
     try {
         const { username, email, password, description } = req.body;
         const avatar = req.file ? "/uploads/" + req.file.filename : null;
 
+        // Check if the email already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ message: "❌ Email already registered." });
         }
 
-        const newUser = new User({ username, email, password, description, avatar });
+        // Hash the password before saving
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Save the new user with the hashed password
+        const newUser = new User({ username, email, password: hashedPassword, description, avatar });
         await newUser.save();
 
         res.json({ message: "✅ User registered successfully!" });
@@ -85,13 +91,19 @@ app.post("/register", upload.single("avatar"), async (req, res) => {
     }
 });
 
-// Login Route
+// Login Route with Password Comparison
 app.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
         const user = await User.findOne({ email });
 
-        if (!user || user.password !== password) {
+        if (!user) {
+            return res.status(401).json({ message: "❌ Invalid email or password." });
+        }
+
+        // Compare the provided password with the hashed password in the database
+        const match = await bcrypt.compare(password, user.password);
+        if (!match) {
             return res.status(401).json({ message: "❌ Invalid email or password." });
         }
 
@@ -138,6 +150,7 @@ app.put("/update-profile/:id", async (req, res) => {
     }
 });
 
+// Update Avatar Route
 app.put("/update-avatar/:id", upload.single("avatar"), async (req, res) => {
     try {
         const userId = req.params.id;
@@ -162,7 +175,7 @@ app.put("/update-avatar/:id", upload.single("avatar"), async (req, res) => {
     }
 });
 
-// ✅ Fetch Reviews by Branch
+// Fetch Reviews by Branch
 app.get("/reviews/:branch", async (req, res) => {
     try {
         const { branch } = req.params;
@@ -173,7 +186,7 @@ app.get("/reviews/:branch", async (req, res) => {
     }
 });
 
-// ✅ Post Review with Branch Handling
+// Post Review with Branch Handling
 app.post("/reviews/:branch", async (req, res) => {
     try {
         const { branch } = req.params; 
@@ -188,7 +201,7 @@ app.post("/reviews/:branch", async (req, res) => {
     }
 });
 
-// ✅ Edit Review by Branch
+// Edit Review by Branch
 app.put("/reviews/:branch/:id", async (req, res) => {
     try {
         const { id } = req.params;
@@ -206,7 +219,7 @@ app.put("/reviews/:branch/:id", async (req, res) => {
     }
 });
 
-// ✅ Delete Review by Branch
+// Delete Review by Branch
 app.delete("/reviews/:branch/:id", async (req, res) => {
     try {
         const { id } = req.params;
@@ -225,5 +238,3 @@ app.delete("/reviews/:branch/:id", async (req, res) => {
 
 // Start Server
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
-
-
