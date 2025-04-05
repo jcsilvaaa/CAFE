@@ -16,8 +16,11 @@ app.use("/images", express.static(path.join(__dirname, "Public", "images")));
 app.use(express.static(path.join(__dirname, 'Public')));
 
 
-
-
+// Serve homepage.html for the root route
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "Public", "Homepage.html"));
+  });
+  
 
 // MongoDB Connection
 mongoose.connect("mongodb://localhost:27017/webcafe", { useNewUrlParser: true, useUnifiedTopology: true })
