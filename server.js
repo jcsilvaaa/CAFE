@@ -13,10 +13,15 @@ const PORT = process.env.PORT || 3000;  // Use dynamic port from environment or 
 
 const mongoDBUri = "mongodb+srv://jeansilva:DLSU1234!@tastecheck.hhcdgvj.mongodb.net/webcafe?retryWrites=true&w=majority";
 
+// CORS Configuration
+app.use(cors({
+    origin: 'https://cafe-1hi2.onrender.com',  
+    allowedHeaders: ['Content-Type']
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
-app.use("/uploads", express.static("uploads")); 
+app.use("/uploads", express.static("uploads"));
 app.use("/images", express.static(path.join(__dirname, "Public", "images")));
 app.use(express.static(path.join(__dirname, 'Public')));
 
@@ -35,12 +40,12 @@ const userSchema = new mongoose.Schema({
     username: String,
     email: String,
     password: String,
-    firstName: String,  
-    lastName: String,   
+    firstName: String,
+    lastName: String,
     description: String,
-    website: String,    
-    facebook: String,   
-    twitter: String,  
+    website: String,
+    facebook: String,
+    twitter: String,
     avatar: String
 });
 
@@ -68,25 +73,28 @@ const upload = multer({ storage });
 
 // Register Route with Password Hashing
 app.post("/register", upload.single("avatar"), async (req, res) => {
+    console.log("Request body:", req.body); // Log incoming data for debugging
+    console.log("Uploaded file:", req.file);  // Log file data for debugging
     try {
         const { username, email, password, description } = req.body;
         const avatar = req.file ? "/uploads/" + req.file.filename : null;
 
-        // Check if the email already exists
+        // Check if email already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ message: "❌ Email already registered." });
         }
 
-        // Hash the password before saving
+        // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Save the new user with the hashed password
+        // Save new user
         const newUser = new User({ username, email, password: hashedPassword, description, avatar });
         await newUser.save();
 
         res.json({ message: "✅ User registered successfully!" });
     } catch (err) {
+        console.error("Error during registration:", err);  // Log any errors
         res.status(500).json({ message: "Error registering user." });
     }
 });
@@ -189,7 +197,7 @@ app.get("/reviews/:branch", async (req, res) => {
 // Post Review with Branch Handling
 app.post("/reviews/:branch", async (req, res) => {
     try {
-        const { branch } = req.params; 
+        const { branch } = req.params;
         const { userId, username, rating, text } = req.body;
 
         const newReview = new Review({ userId, username, branch, rating, text });
@@ -237,4 +245,5 @@ app.delete("/reviews/:branch/:id", async (req, res) => {
 });
 
 // Start Server
-app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on https://cafe-1hi2.onrender.com`));
+
