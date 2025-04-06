@@ -27,7 +27,6 @@ TasteCheck helps you find cozy coffee spots—and share your own experiences too
 - **Frontend**: HTML, CSS, JavaScript
 - **Backend**: Node.js, Express
 - **Database**: MongoDB (using MongoDB Atlas)
-- **Authentication**: Simple localStorage-based frontend session
 - **Deployment**: Render
 
 ---
